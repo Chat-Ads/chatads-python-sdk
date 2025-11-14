@@ -1,0 +1,4 @@
+.DS_Store
+chatads_sdk.egg-info/
+dist/
+__pycache__/
