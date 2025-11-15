@@ -19,8 +19,8 @@ from chatads_sdk import ChatAdsAPIError, ChatAdsClient
 # CONFIGURATION
 # ---------------------------------------------------------------------------
 
-API_KEY = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-BASE_URL = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+API_KEY = "XXX"
+BASE_URL = "https://chatads--chatads-api-fastapiserver-serve.modal.run"
 MESSAGE = "A great home gym set includes bar bells, a bench, and a yoga mat."
 CALLER_IP = ""
 COUNTRY = "US"

@@ -21,7 +21,7 @@ from .models import (
     FUNCTION_ITEM_OPTIONAL_FIELDS,
 )
 
-_DEFAULT_ENDPOINT = "/chatads-script"
+_DEFAULT_ENDPOINT = "/v1/chatads/messages"
 _DEFAULT_RETRY_STATUSES = frozenset({408, 429, 500, 502, 503, 504})
 _FUNCTION_ITEM_OPTIONAL_FIELDS = set(FUNCTION_ITEM_OPTIONAL_FIELDS)
 _FIELD_ALIAS_LOOKUP = {alias.lower(): field for alias, field in FUNCTION_ITEM_FIELD_ALIASES.items()}
