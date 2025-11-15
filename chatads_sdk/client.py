@@ -9,6 +9,7 @@ import time
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from typing import Any, Dict, Iterable, Optional, Set
+from urllib.parse import urlparse
 
 import httpx
 
@@ -46,11 +47,9 @@ class ChatAdsClient:
     ) -> None:
         if not api_key:
             raise ValueError("api_key is required")
-        if not base_url:
-            raise ValueError("base_url is required")
 
         self._api_key = api_key
-        self._base_url = base_url.rstrip("/")
+        self._base_url = _validate_base_url(base_url)
         self._endpoint = endpoint if endpoint.startswith("/") else f"/{endpoint}"
         self._timeout = timeout
         self._client = http_client or httpx.Client(timeout=timeout)
@@ -158,7 +157,7 @@ class ChatAdsClient:
         safe_headers = {k: v for k, v in headers.items() if k.lower() != "x-api-key"}
         self._logger.info("ChatAds request -> %s", url)
         self._logger.info("Headers: %s", safe_headers)
-        self._logger.info("Body: %s", json.dumps(body, indent=2))
+        self._logger.info("Body (sanitized): %s", json.dumps(_sanitize_payload(body), indent=2))
 
     def _log_response(self, response: httpx.Response, parsed: ChatAdsResponse) -> None:
         if not self._debug:
@@ -192,11 +191,9 @@ class AsyncChatAdsClient:
     ) -> None:
         if not api_key:
             raise ValueError("api_key is required")
-        if not base_url:
-            raise ValueError("base_url is required")
 
         self._api_key = api_key
-        self._base_url = base_url.rstrip("/")
+        self._base_url = _validate_base_url(base_url)
         self._endpoint = endpoint if endpoint.startswith("/") else f"/{endpoint}"
         self._timeout = timeout
         self._client = http_client or httpx.AsyncClient(timeout=timeout)
@@ -300,7 +297,7 @@ class AsyncChatAdsClient:
         safe_headers = {k: v for k, v in headers.items() if k.lower() != "x-api-key"}
         self._logger.info("ChatAds request -> %s", url)
         self._logger.info("Headers: %s", safe_headers)
-        self._logger.info("Body: %s", json.dumps(body, indent=2))
+        self._logger.info("Body (sanitized): %s", json.dumps(_sanitize_payload(body), indent=2))
 
     def _log_response(self, response: httpx.Response, parsed: ChatAdsResponse) -> None:
         if not self._debug:
@@ -383,3 +380,19 @@ def _sleep_sync(delay: float) -> None:
 async def _sleep_async(delay: float) -> None:
     if delay > 0:
         await asyncio.sleep(delay)
+
+
+def _validate_base_url(raw: str) -> str:
+    cleaned = (raw or "").rstrip("/")
+    if not cleaned:
+        raise ValueError("base_url is required")
+    parsed = urlparse(cleaned)
+    if parsed.scheme.lower() != "https":
+        raise ValueError("base_url must start with https://")
+    if not parsed.netloc:
+        raise ValueError("base_url must include a hostname")
+    return cleaned
+
+
+def _sanitize_payload(body: Dict[str, Any]) -> Dict[str, str]:
+    return {key: "<redacted>" for key in body.keys()}
