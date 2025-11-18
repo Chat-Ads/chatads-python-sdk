@@ -19,12 +19,14 @@ from chatads_sdk import ChatAdsAPIError, ChatAdsClient
 # CONFIGURATION
 # ---------------------------------------------------------------------------
 
-API_KEY = ""
+API_KEY = "XXXXXX"
 BASE_URL = "https://chatads--chatads-api-fastapiserver-serve.modal.run"
 MESSAGE = "A great home gym set includes bar bells, a bench, and a yoga mat."
-CALLER_IP = ""
-COUNTRY = "US"
-LANGUAGE = "en"
+
+# Optional fields - uncomment and set values if needed
+# CALLER_IP = "1.2.3.4"
+# COUNTRY = "US"
+# LANGUAGE = "en"
 
 
 def main() -> int:
@@ -35,11 +37,13 @@ def main() -> int:
     client = ChatAdsClient(api_key=API_KEY, base_url=BASE_URL, raise_on_failure=True)
 
     payload: Dict[str, Any] = {"message": MESSAGE}
-    if CALLER_IP:
+
+    # Add optional fields if they're defined
+    if "CALLER_IP" in globals() and CALLER_IP:
         payload["ip"] = CALLER_IP
-    if COUNTRY:
+    if "COUNTRY" in globals() and COUNTRY:
         payload["country"] = COUNTRY
-    if LANGUAGE:
+    if "LANGUAGE" in globals() and LANGUAGE:
         payload["language"] = LANGUAGE
 
     try:
