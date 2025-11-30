@@ -26,7 +26,6 @@ MESSAGE = "A great home gym set includes bar bells, a bench, and a yoga mat."
 # Optional fields - uncomment and set values if needed
 # CALLER_IP = "1.2.3.4"
 # COUNTRY = "US"
-# LANGUAGE = "en"
 
 
 def main() -> int:
@@ -43,8 +42,6 @@ def main() -> int:
         payload["ip"] = CALLER_IP
     if "COUNTRY" in globals() and COUNTRY:
         payload["country"] = COUNTRY
-    if "LANGUAGE" in globals() and LANGUAGE:
-        payload["language"] = LANGUAGE
 
     try:
         response = client.analyze_message(**payload)

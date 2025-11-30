@@ -197,12 +197,12 @@ async def test_async_analyze_message_posts_payload() -> None:
         http_client=http_client,
     )
     try:
-        response = await client.analyze_message("hello async", language="en")
+        response = await client.analyze_message("hello async", country="US")
     finally:
         await http_client.aclose()
 
     assert captured["headers"]["x-api-key"] == "async-key"
-    assert captured["body"]["language"] == "en"
+    assert captured["body"]["country"] == "US"
     assert response.meta.request_id == "async_req"
 
 

@@ -25,7 +25,6 @@ BASE_URL = "https://chatads--chatads-api-fastapiserver-serve.modal.run"
 MESSAGE = "A great home gym set includes bar bells, a bench, and a yoga mat."
 CALLER_IP = ""
 COUNTRY = "US"
-LANGUAGE = "en"
 
 # Retry/strict behavior; tweak as needed.
 RAISE_ON_FAILURE = True
@@ -67,8 +66,6 @@ def main() -> int:
         request_kwargs["ip"] = CALLER_IP
     if COUNTRY:
         request_kwargs["country"] = COUNTRY
-    if LANGUAGE:
-        request_kwargs["language"] = LANGUAGE
 
     try:
         response = client.analyze_message(

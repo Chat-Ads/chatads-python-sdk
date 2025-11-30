@@ -13,20 +13,19 @@ FUNCTION_ITEM_OPTIONAL_FIELDS = (
     "email",
     "type",
     "domain",
-    "user_agent",
     "ip",
     "reason",
     "company",
     "name",
     "country",
-    "language",
-    "website",
+    "override_parsing",
+    "response_quality",
 )
 
 _CAMELCASE_ALIASES = {
     "pageurl": "page_url",
     "pagetitle": "page_title",
-    "useragent": "user_agent",
+    "overrideparsing": "override_parsing",
 }
 
 FUNCTION_ITEM_FIELD_ALIASES = {
@@ -42,14 +41,13 @@ _FIELD_TO_PAYLOAD_KEY = {
     "email": "email",
     "type": "type",
     "domain": "domain",
-    "user_agent": "userAgent",
     "ip": "ip",
     "reason": "reason",
     "company": "company",
     "name": "name",
     "country": "country",
-    "language": "language",
-    "website": "website",
+    "override_parsing": "override_parsing",
+    "response_quality": "response_quality",
 }
 
 RESERVED_PAYLOAD_KEYS = frozenset({"message", *(_FIELD_TO_PAYLOAD_KEY.values())})
@@ -193,14 +191,13 @@ class FunctionItemPayload:
     email: Optional[str] = None
     type: Optional[str] = None
     domain: Optional[str] = None
-    user_agent: Optional[str] = None
     ip: Optional[str] = None
     reason: Optional[str] = None
     company: Optional[str] = None
     name: Optional[str] = None
     country: Optional[str] = None
-    language: Optional[str] = None
-    website: Optional[str] = None
+    response_quality: Optional[str] = None
+    override_parsing: Optional[bool] = None
     extra_fields: Dict[str, Any] = field(default_factory=dict)
 
     def to_payload(self) -> Dict[str, Any]:
