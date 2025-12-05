@@ -20,12 +20,20 @@ FUNCTION_ITEM_OPTIONAL_FIELDS = (
     "country",
     "override_parsing",
     "response_quality",
+    "message_analysis",
+    "fill_priority",
+    "min_intent",
+    "skip_message_analysis",
 )
 
 _CAMELCASE_ALIASES = {
     "pageurl": "page_url",
     "pagetitle": "page_title",
     "overrideparsing": "override_parsing",
+    "messageanalysis": "message_analysis",
+    "fillpriority": "fill_priority",
+    "minintent": "min_intent",
+    "skipmessageanalysis": "skip_message_analysis",
 }
 
 FUNCTION_ITEM_FIELD_ALIASES = {
@@ -48,6 +56,10 @@ _FIELD_TO_PAYLOAD_KEY = {
     "country": "country",
     "override_parsing": "override_parsing",
     "response_quality": "response_quality",
+    "message_analysis": "message_analysis",
+    "fill_priority": "fill_priority",
+    "min_intent": "min_intent",
+    "skip_message_analysis": "skip_message_analysis",
 }
 
 RESERVED_PAYLOAD_KEYS = frozenset({"message", *(_FIELD_TO_PAYLOAD_KEY.values())})
@@ -55,6 +67,7 @@ RESERVED_PAYLOAD_KEYS = frozenset({"message", *(_FIELD_TO_PAYLOAD_KEY.values())}
 
 @dataclass
 class ChatAdsAd:
+    """Ad object returned when a product match is found."""
     product: str
     link: str
     message: str
@@ -74,9 +87,15 @@ class ChatAdsAd:
 
 @dataclass
 class ChatAdsData:
+    """Data object containing match results and optional ad."""
     matched: bool
+    filled: bool = False
     ad: Optional[ChatAdsAd] = None
+    keyword: Optional[str] = None
     reason: Optional[str] = None
+    intent_score: Optional[float] = None
+    intent_level: Optional[str] = None
+    min_intent_required: Optional[str] = None
 
     @classmethod
     def from_dict(cls, data: Optional[Dict[str, Any]]) -> Optional["ChatAdsData"]:
@@ -84,8 +103,13 @@ class ChatAdsData:
             return None
         return cls(
             matched=bool(data.get("matched", False)),
+            filled=bool(data.get("filled", False)),
             ad=ChatAdsAd.from_dict(data.get("ad")),
+            keyword=data.get("keyword"),
             reason=data.get("reason"),
+            intent_score=data.get("intent_score"),
+            intent_level=data.get("intent_level"),
+            min_intent_required=data.get("min_intent_required"),
         )
 
 
@@ -108,15 +132,13 @@ class ChatAdsError:
 
 @dataclass
 class UsageInfo:
+    """Usage information returned in API responses."""
     monthly_requests: int
-    free_tier_limit: int
-    free_tier_remaining: int
     is_free_tier: bool
-    has_credit_card: bool
+    free_tier_limit: Optional[int] = None
+    free_tier_remaining: Optional[int] = None
     daily_requests: Optional[int] = None
     daily_limit: Optional[int] = None
-    minute_requests: Optional[int] = None
-    minute_limit: Optional[int] = None
 
     @classmethod
     def from_dict(cls, data: Optional[Dict[str, Any]]) -> Optional["UsageInfo"]:
@@ -124,24 +146,24 @@ class UsageInfo:
             return None
         return cls(
             monthly_requests=int(data.get("monthly_requests") or 0),
-            free_tier_limit=int(data.get("free_tier_limit") or 0),
-            free_tier_remaining=int(data.get("free_tier_remaining") or 0),
             is_free_tier=bool(data.get("is_free_tier", False)),
-            has_credit_card=bool(data.get("has_credit_card", False)),
+            free_tier_limit=_maybe_int(data.get("free_tier_limit")),
+            free_tier_remaining=_maybe_int(data.get("free_tier_remaining")),
             daily_requests=_maybe_int(data.get("daily_requests")),
             daily_limit=_maybe_int(data.get("daily_limit")),
-            minute_requests=_maybe_int(data.get("minute_requests")),
-            minute_limit=_maybe_int(data.get("minute_limit")),
         )
 
 
 @dataclass
 class ChatAdsMeta:
+    """Metadata about the API request and response."""
     request_id: str
-    user_id: Optional[str] = None
     country: Optional[str] = None
     language: Optional[str] = None
-    processing_time_ms: Optional[float] = None
+    extraction_method: Optional[str] = None
+    message_analysis_used: Optional[str] = None
+    fill_priority_used: Optional[str] = None
+    min_intent_used: Optional[str] = None
     usage: Optional[UsageInfo] = None
     raw: Dict[str, Any] = field(default_factory=dict)
 
@@ -150,10 +172,12 @@ class ChatAdsMeta:
         data = data or {}
         return cls(
             request_id=data.get("request_id", ""),
-            user_id=data.get("user_id"),
             country=data.get("country"),
             language=data.get("language"),
-            processing_time_ms=data.get("processing_time_ms"),
+            extraction_method=data.get("extraction_method"),
+            message_analysis_used=data.get("message_analysis_used"),
+            fill_priority_used=data.get("fill_priority_used"),
+            min_intent_used=data.get("min_intent_used"),
             usage=UsageInfo.from_dict(data.get("usage")),
             raw=data,
         )
@@ -198,6 +222,10 @@ class FunctionItemPayload:
     country: Optional[str] = None
     response_quality: Optional[str] = None
     override_parsing: Optional[bool] = None
+    message_analysis: Optional[str] = None
+    fill_priority: Optional[str] = None
+    min_intent: Optional[str] = None
+    skip_message_analysis: Optional[bool] = None
     extra_fields: Dict[str, Any] = field(default_factory=dict)
 
     def to_payload(self) -> Dict[str, Any]:

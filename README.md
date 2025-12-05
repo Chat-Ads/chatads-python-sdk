@@ -20,34 +20,80 @@ from chatads_sdk import ChatAdsClient, AsyncChatAdsClient, FunctionItemPayload
 # Synchronous usage
 with ChatAdsClient(
     api_key="YOUR_X_API_KEY",
-    base_url="https://<your-chatads-domain>",
+    base_url="https://chatads--chatads-api-fastapiserver-serve.modal.run",
     raise_on_failure=True,
     max_retries=2,
     retry_backoff_factor=0.75,
 ) as client:
     payload = FunctionItemPayload(
         message="Looking for a CRM to close more deals",
-        ip="1.2.3.4",
+        country="US",
     )
     result = client.analyze(payload)
-    if result.success:
-        print(result.data.ad)
+    if result.success and result.data.filled:
+        print(result.data.ad.product, result.data.ad.link)
     else:
-        print(result.error.code, result.error.message)
+        print("No match:", result.data.reason if result.data else "unknown")
 
 # Async usage
 async with AsyncChatAdsClient(
     api_key="YOUR_X_API_KEY",
-    base_url="https://<your-chatads-domain>",
+    base_url="https://chatads--chatads-api-fastapiserver-serve.modal.run",
     max_retries=3,
 ) as async_client:
-    result = await async_client.analyze_message("Need data warehousing ideas", country="US")
+    result = await async_client.analyze_message(
+        "Need data warehousing ideas",
+        country="US",
+        message_analysis="fast",
+    )
     print(result.raw)
+```
+
+## Request Options
+
+The `FunctionItemPayload` supports these fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `message` | str (required) | Message to analyze (1-5000 chars) |
+| `country` | str | ISO 3166-1 alpha-2 country code for geo-targeting |
+| `ip` | str | Client IP address for geo-detection |
+| `domain` | str | Domain for context |
+| `page_url` | str | Page URL for context |
+| `message_analysis` | str | Extraction method: `"fast"`, `"balanced"` (default), `"thorough"` |
+| `fill_priority` | str | URL resolution: `"speed"` or `"coverage"` (default) |
+| `min_intent` | str | Intent filter: `"any"`, `"low"` (default), `"medium"`, `"high"` |
+| `skip_message_analysis` | bool | Skip NLP/LLM and use message directly as search query |
+
+## Response Structure
+
+```python
+result.success         # bool - True if request succeeded
+result.data.matched    # bool - True if keywords were extracted
+result.data.filled     # bool - True if affiliate URL was returned
+result.data.ad         # ChatAdsAd or None
+result.data.keyword    # Extracted keyword used for matching
+result.data.reason     # Reason for no match (if applicable)
+result.error           # ChatAdsError or None (code, message, details)
+result.meta.request_id # Unique request identifier
+result.meta.usage      # UsageInfo with quota information
+result.raw             # Full raw JSON response
 ```
 
 ## Error Handling
 
-Non-2xx responses raise `ChatAdsAPIError` and include the parsed error payload plus the original HTTP status code so you can branch on quota/validation failures. Set `raise_on_failure=True` if you want 200 responses with `success=false` to raise the same exception class.
+Non-2xx responses raise `ChatAdsAPIError` with:
+- `status_code` - HTTP status code
+- `response.error.code` - Error code (e.g., `DAILY_QUOTA_EXCEEDED`, `RATE_LIMITED`)
+- `response.error.message` - Human-readable message
+- `retry_after` - Seconds to wait (for 429 responses)
+
+Set `raise_on_failure=True` to also raise on 200 responses with `success=false`.
+
+**Retryable status codes** (automatic with `max_retries>0`):
+- `408` Request Timeout
+- `429` Rate Limited
+- `500`, `502`, `503`, `504` Server errors
 
 ## Notes
 

@@ -37,22 +37,31 @@ def test_analyze_message_posts_payload_and_parses_response() -> None:
         "success": True,
         "data": {
             "matched": True,
+            "filled": True,
             "ad": {
                 "product": "Gym Set",
                 "link": "https://store.example.com",
                 "message": "Best gym set ever",
                 "category": "fitness",
             },
-            "reason": "looks like an ad",
+            "keyword": "gym equipment",
+            "reason": None,
+            "intent_score": 0.85,
+            "intent_level": "high",
         },
         "meta": {
             "request_id": "req_123",
+            "extraction_method": "llm",
+            "message_analysis_used": "balanced",
+            "fill_priority_used": "coverage",
+            "min_intent_used": "low",
             "usage": {
                 "monthly_requests": 1,
                 "free_tier_limit": 100,
                 "free_tier_remaining": 99,
                 "is_free_tier": True,
-                "has_credit_card": False,
+                "daily_requests": 5,
+                "daily_limit": 50,
             },
         },
     }
@@ -88,8 +97,14 @@ def test_analyze_message_posts_payload_and_parses_response() -> None:
 
     assert response.success is True
     assert response.data is not None and response.data.matched is True
+    assert response.data.filled is True
+    assert response.data.keyword == "gym equipment"
+    assert response.data.intent_score == 0.85
+    assert response.data.intent_level == "high"
     assert response.data.ad is not None and response.data.ad.product == "Gym Set"
     assert response.meta.request_id == "req_123"
+    assert response.meta.extraction_method == "llm"
+    assert response.meta.message_analysis_used == "balanced"
 
 
 def test_analyze_message_raises_api_error_when_success_false_and_raise_on_failure() -> None:
