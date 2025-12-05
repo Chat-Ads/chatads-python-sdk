@@ -6,20 +6,8 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
 FUNCTION_ITEM_OPTIONAL_FIELDS = (
-    "page_url",
-    "page_title",
-    "referrer",
-    "address",
-    "email",
-    "type",
-    "domain",
     "ip",
-    "reason",
-    "company",
-    "name",
     "country",
-    "override_parsing",
-    "response_quality",
     "message_analysis",
     "fill_priority",
     "min_intent",
@@ -27,9 +15,6 @@ FUNCTION_ITEM_OPTIONAL_FIELDS = (
 )
 
 _CAMELCASE_ALIASES = {
-    "pageurl": "page_url",
-    "pagetitle": "page_title",
-    "overrideparsing": "override_parsing",
     "messageanalysis": "message_analysis",
     "fillpriority": "fill_priority",
     "minintent": "min_intent",
@@ -42,20 +27,8 @@ FUNCTION_ITEM_FIELD_ALIASES = {
 }
 
 _FIELD_TO_PAYLOAD_KEY = {
-    "page_url": "pageUrl",
-    "page_title": "pageTitle",
-    "referrer": "referrer",
-    "address": "address",
-    "email": "email",
-    "type": "type",
-    "domain": "domain",
     "ip": "ip",
-    "reason": "reason",
-    "company": "company",
-    "name": "name",
     "country": "country",
-    "override_parsing": "override_parsing",
-    "response_quality": "response_quality",
     "message_analysis": "message_analysis",
     "fill_priority": "fill_priority",
     "min_intent": "min_intent",
@@ -208,20 +181,8 @@ class FunctionItemPayload:
     """Subset of the server's FunctionItem pydantic model."""
 
     message: str
-    page_url: Optional[str] = None
-    page_title: Optional[str] = None
-    referrer: Optional[str] = None
-    address: Optional[str] = None
-    email: Optional[str] = None
-    type: Optional[str] = None
-    domain: Optional[str] = None
     ip: Optional[str] = None
-    reason: Optional[str] = None
-    company: Optional[str] = None
-    name: Optional[str] = None
     country: Optional[str] = None
-    response_quality: Optional[str] = None
-    override_parsing: Optional[bool] = None
     message_analysis: Optional[str] = None
     fill_priority: Optional[str] = None
     min_intent: Optional[str] = None

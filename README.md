@@ -56,10 +56,8 @@ The `FunctionItemPayload` supports these fields:
 | Field | Type | Description |
 |-------|------|-------------|
 | `message` | str (required) | Message to analyze (1-5000 chars) |
+| `ip` | str | Client IP address for geo-detection (max 64 chars) |
 | `country` | str | ISO 3166-1 alpha-2 country code for geo-targeting |
-| `ip` | str | Client IP address for geo-detection |
-| `domain` | str | Domain for context |
-| `page_url` | str | Page URL for context |
 | `message_analysis` | str | Extraction method: `"fast"`, `"balanced"` (default), `"thorough"` |
 | `fill_priority` | str | URL resolution: `"speed"` or `"coverage"` (default) |
 | `min_intent` | str | Intent filter: `"any"`, `"low"` (default), `"medium"`, `"high"` |
