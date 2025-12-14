@@ -56,12 +56,12 @@ The `FunctionItemPayload` supports these fields:
 | Field | Type | Description |
 |-------|------|-------------|
 | `message` | str (required) | Message to analyze (1-5000 chars) |
-| `ip` | str | Client IP address for geo-detection (max 64 chars) |
-| `country` | str | ISO 3166-1 alpha-2 country code for geo-targeting |
-| `message_analysis` | str | Extraction method: `"fast"`, `"balanced"` (default), `"thorough"` |
-| `fill_priority` | str | URL resolution: `"speed"` or `"coverage"` (default) |
-| `min_intent` | str | Intent filter: `"any"`, `"low"` (default), `"medium"`, `"high"` |
-| `skip_message_analysis` | bool | Skip NLP/LLM and use message directly as search query |
+| `ip` | str | IPv4 address for country detection (max 64 characters) |
+| `country` | str | Country code (e.g., 'US'). If provided, skips IP-based country detection |
+| `message_analysis` | str | Controls keyword extraction method. Use 'fast' to optimize for speed, 'thorough' (default) to optimize for best keyword selection |
+| `fill_priority` | str | Controls affiliate link discovery. Use 'speed' to optimize for speed, 'coverage' (default) to ping multiple sources for the right affiliate link |
+| `min_intent` | str | Minimum purchase intent level required for affiliate resolution. 'any' = no filtering, 'low' (default) = filter garbage, 'medium' = balanced quality/fill, 'high' = high-intent keywords only |
+| `skip_message_analysis` | bool | Treat exact message as product keyword. When true, goes straight to affiliate link discovery without keyword extraction |
 
 ## Response Structure
 

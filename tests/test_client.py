@@ -52,7 +52,7 @@ def test_analyze_message_posts_payload_and_parses_response() -> None:
         "meta": {
             "request_id": "req_123",
             "extraction_method": "llm",
-            "message_analysis_used": "balanced",
+            "message_analysis_used": "thorough",
             "fill_priority_used": "coverage",
             "min_intent_used": "low",
             "usage": {
@@ -104,7 +104,7 @@ def test_analyze_message_posts_payload_and_parses_response() -> None:
     assert response.data.ad is not None and response.data.ad.product == "Gym Set"
     assert response.meta.request_id == "req_123"
     assert response.meta.extraction_method == "llm"
-    assert response.meta.message_analysis_used == "balanced"
+    assert response.meta.message_analysis_used == "thorough"
 
 
 def test_analyze_message_raises_api_error_when_success_false_and_raise_on_failure() -> None:
