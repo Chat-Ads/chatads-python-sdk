@@ -2,3 +2,7 @@
 chatads_sdk.egg-info/
 dist/
 __pycache__/
+
+# Environment variables
+.env
+.env.local

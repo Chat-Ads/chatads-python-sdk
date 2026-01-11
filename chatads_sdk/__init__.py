@@ -2,8 +2,9 @@
 
 from .client import ChatAdsClient, AsyncChatAdsClient
 from .models import (
-    ChatAdsAd,
-    ChatAdsData,
+    Offer,
+    Product,
+    AnalyzeData,
     ChatAdsError,
     ChatAdsMeta,
     ChatAdsResponse,
@@ -15,8 +16,9 @@ from .exceptions import ChatAdsAPIError, ChatAdsSDKError
 __all__ = [
     "ChatAdsClient",
     "AsyncChatAdsClient",
-    "ChatAdsAd",
-    "ChatAdsData",
+    "Offer",
+    "Product",
+    "AnalyzeData",
     "ChatAdsError",
     "ChatAdsMeta",
     "ChatAdsResponse",

@@ -36,25 +36,33 @@ def test_analyze_message_posts_payload_and_parses_response() -> None:
     response_json = {
         "success": True,
         "data": {
-            "matched": True,
-            "filled": True,
-            "ad": {
-                "product": "Gym Set",
-                "link": "https://store.example.com",
-                "message": "Best gym set ever",
-                "category": "fitness",
-            },
-            "keyword": "gym equipment",
-            "reason": None,
-            "intent_score": 0.85,
-            "intent_level": "high",
+            "Offers": [
+                {
+                    "LinkText": "gym equipment",
+                    "SearchTerm": "home gym set",
+                    "IntentScore": 0.85,
+                    "IntentLevel": "high",
+                    "URL": "https://store.example.com/gym-set",
+                    "URLSource": "serper",
+                    "Status": "filled",
+                    "Reason": "",
+                    "Category": "fitness",
+                    "Product": {
+                        "Title": "Gym Set",
+                        "Description": "Best gym set ever",
+                    },
+                }
+            ],
+            "Requested": 1,
+            "Returned": 1,
+            "LatencyMs": 150.5,
+            "ExtractionMs": 50.2,
+            "LookupMs": 100.3,
         },
         "meta": {
             "request_id": "req_123",
-            "extraction_method": "llm",
-            "message_analysis_used": "thorough",
-            "fill_priority_used": "coverage",
-            "min_intent_used": "low",
+            "timestamp": "2026-01-06T12:00:00Z",
+            "version": "1.0.0",
             "usage": {
                 "monthly_requests": 1,
                 "free_tier_limit": 100,
@@ -83,8 +91,7 @@ def test_analyze_message_posts_payload_and_parses_response() -> None:
     try:
         response = client.analyze_message(
             "Buy now",
-            pageUrl="https://example.com/page",
-            customField="bar",
+            country="US",
         )
     finally:
         http_client.close()
@@ -92,19 +99,18 @@ def test_analyze_message_posts_payload_and_parses_response() -> None:
     assert captured["url"] == "https://chatads.example.com/v1/chatads/messages"
     assert captured["headers"]["x-api-key"] == "test-key"
     assert captured["body"]["message"] == "Buy now"
-    assert captured["body"]["pageUrl"] == "https://example.com/page"
-    assert captured["body"]["customField"] == "bar"
+    assert captured["body"]["country"] == "US"
 
     assert response.success is True
-    assert response.data is not None and response.data.matched is True
-    assert response.data.filled is True
-    assert response.data.keyword == "gym equipment"
-    assert response.data.intent_score == 0.85
-    assert response.data.intent_level == "high"
-    assert response.data.ad is not None and response.data.ad.product == "Gym Set"
+    assert response.data is not None
+    assert response.data.Returned == 1
+    assert len(response.data.Offers) == 1
+    offer = response.data.Offers[0]
+    assert offer.IntentScore == 0.85
+    assert offer.IntentLevel == "high"
+    assert offer.Product is not None and offer.Product.Title == "Gym Set"
     assert response.meta.request_id == "req_123"
-    assert response.meta.extraction_method == "llm"
-    assert response.meta.message_analysis_used == "thorough"
+    assert response.meta.version == "1.0.0"
 
 
 def test_analyze_message_raises_api_error_when_success_false_and_raise_on_failure() -> None:
@@ -169,7 +175,7 @@ def test_client_retries_on_retryable_status() -> None:
             200,
             json={
                 "success": True,
-                "data": {"matched": False},
+                "data": {"Offers": [], "Requested": 1, "Returned": 0},
                 "meta": {"request_id": "second"},
             },
         )
@@ -191,11 +197,11 @@ def test_client_retries_on_retryable_status() -> None:
     assert response.meta.request_id == "second"
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_async_analyze_message_posts_payload() -> None:
     response_json = {
         "success": True,
-        "data": {"matched": False},
+        "data": {"Offers": [], "Requested": 1, "Returned": 0},
         "meta": {"request_id": "async_req"},
     }
     captured = {}
@@ -221,7 +227,7 @@ async def test_async_analyze_message_posts_payload() -> None:
     assert response.meta.request_id == "async_req"
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_async_analyze_message_respects_raise_on_failure() -> None:
     response_json = {
         "success": False,

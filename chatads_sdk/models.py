@@ -1,9 +1,9 @@
-"""Dataclasses that mirror the ChatAds FastAPI request/response models."""
+"""Dataclasses that mirror the ChatAds Go API request/response models."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 FUNCTION_ITEM_OPTIONAL_FIELDS = (
     "ip",
@@ -12,6 +12,7 @@ FUNCTION_ITEM_OPTIONAL_FIELDS = (
     "fill_priority",
     "min_intent",
     "skip_message_analysis",
+    "max_offers",
 )
 
 _CAMELCASE_ALIASES = {
@@ -19,6 +20,7 @@ _CAMELCASE_ALIASES = {
     "fillpriority": "fill_priority",
     "minintent": "min_intent",
     "skipmessageanalysis": "skip_message_analysis",
+    "maxoffers": "max_offers",
 }
 
 FUNCTION_ITEM_FIELD_ALIASES = {
@@ -33,56 +35,83 @@ _FIELD_TO_PAYLOAD_KEY = {
     "fill_priority": "fill_priority",
     "min_intent": "min_intent",
     "skip_message_analysis": "skip_message_analysis",
+    "max_offers": "max_offers",
 }
 
 RESERVED_PAYLOAD_KEYS = frozenset({"message", *(_FIELD_TO_PAYLOAD_KEY.values())})
 
 
 @dataclass
-class ChatAdsAd:
-    """Ad object returned when a product match is found."""
-    product: str
-    link: str
-    message: str
-    category: str
+class Product:
+    """Product metadata from resolution."""
+    Title: Optional[str] = None
+    Description: Optional[str] = None
 
     @classmethod
-    def from_dict(cls, data: Optional[Dict[str, Any]]) -> Optional["ChatAdsAd"]:
+    def from_dict(cls, data: Optional[Dict[str, Any]]) -> Optional["Product"]:
         if not data:
             return None
         return cls(
-            product=data.get("product", ""),
-            link=data.get("link", ""),
-            message=data.get("message", ""),
-            category=data.get("category", ""),
+            Title=data.get("Title"),
+            Description=data.get("Description"),
         )
 
 
 @dataclass
-class ChatAdsData:
-    """Data object containing match results and optional ad."""
-    matched: bool
-    filled: bool = False
-    ad: Optional[ChatAdsAd] = None
-    keyword: Optional[str] = None
-    reason: Optional[str] = None
-    intent_score: Optional[float] = None
-    intent_level: Optional[str] = None
-    min_intent_required: Optional[str] = None
+class Offer:
+    """Single affiliate offer returned by the API."""
+    LinkText: str
+    IntentLevel: str
+    URL: str
+    Status: str
+    SearchTerm: Optional[str] = None
+    IntentScore: Optional[float] = None
+    URLSource: Optional[str] = None
+    Reason: Optional[str] = None
+    Category: Optional[str] = None
+    Product: Optional[Product] = None
 
     @classmethod
-    def from_dict(cls, data: Optional[Dict[str, Any]]) -> Optional["ChatAdsData"]:
+    def from_dict(cls, data: Optional[Dict[str, Any]]) -> Optional["Offer"]:
         if not data:
             return None
         return cls(
-            matched=bool(data.get("matched", False)),
-            filled=bool(data.get("filled", False)),
-            ad=ChatAdsAd.from_dict(data.get("ad")),
-            keyword=data.get("keyword"),
-            reason=data.get("reason"),
-            intent_score=data.get("intent_score"),
-            intent_level=data.get("intent_level"),
-            min_intent_required=data.get("min_intent_required"),
+            LinkText=data.get("LinkText", ""),
+            IntentLevel=data.get("IntentLevel", ""),
+            URL=data.get("URL", ""),
+            Status=data.get("Status", ""),
+            SearchTerm=data.get("SearchTerm"),
+            IntentScore=data.get("IntentScore"),
+            URLSource=data.get("URLSource"),
+            Reason=data.get("Reason"),
+            Category=data.get("Category"),
+            Product=Product.from_dict(data.get("Product")),
+        )
+
+
+@dataclass
+class AnalyzeData:
+    """Response data containing affiliate offers."""
+    Offers: List[Offer]
+    Requested: int
+    Returned: int
+    LatencyMs: Optional[float] = None
+    ExtractionMs: Optional[float] = None
+    LookupMs: Optional[float] = None
+
+    @classmethod
+    def from_dict(cls, data: Optional[Dict[str, Any]]) -> Optional["AnalyzeData"]:
+        if not data:
+            return None
+        offers_data = data.get("Offers", [])
+        offers = [Offer.from_dict(o) for o in offers_data if o]
+        return cls(
+            Offers=[o for o in offers if o is not None],
+            Requested=int(data.get("Requested", 0)),
+            Returned=int(data.get("Returned", 0)),
+            LatencyMs=data.get("LatencyMs"),
+            ExtractionMs=data.get("ExtractionMs"),
+            LookupMs=data.get("LookupMs"),
         )
 
 
@@ -131,13 +160,11 @@ class UsageInfo:
 class ChatAdsMeta:
     """Metadata about the API request and response."""
     request_id: str
+    timestamp: Optional[str] = None
+    version: Optional[str] = None
     country: Optional[str] = None
-    language: Optional[str] = None
-    extraction_method: Optional[str] = None
-    message_analysis_used: Optional[str] = None
-    fill_priority_used: Optional[str] = None
-    min_intent_used: Optional[str] = None
     usage: Optional[UsageInfo] = None
+    timing_ms: Optional[Dict[str, float]] = None
     raw: Dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -145,13 +172,11 @@ class ChatAdsMeta:
         data = data or {}
         return cls(
             request_id=data.get("request_id", ""),
+            timestamp=data.get("timestamp"),
+            version=data.get("version"),
             country=data.get("country"),
-            language=data.get("language"),
-            extraction_method=data.get("extraction_method"),
-            message_analysis_used=data.get("message_analysis_used"),
-            fill_priority_used=data.get("fill_priority_used"),
-            min_intent_used=data.get("min_intent_used"),
             usage=UsageInfo.from_dict(data.get("usage")),
+            timing_ms=data.get("timing_ms"),
             raw=data,
         )
 
@@ -160,7 +185,7 @@ class ChatAdsMeta:
 class ChatAdsResponse:
     success: bool
     meta: ChatAdsMeta
-    data: Optional[ChatAdsData] = None
+    data: Optional[AnalyzeData] = None
     error: Optional[ChatAdsError] = None
     raw: Dict[str, Any] = field(default_factory=dict)
 
@@ -169,7 +194,7 @@ class ChatAdsResponse:
         data = data or {}
         return cls(
             success=bool(data.get("success", False)),
-            data=ChatAdsData.from_dict(data.get("data")),
+            data=AnalyzeData.from_dict(data.get("data")),
             error=ChatAdsError.from_dict(data.get("error")),
             meta=ChatAdsMeta.from_dict(data.get("meta")),
             raw=data,
@@ -178,7 +203,10 @@ class ChatAdsResponse:
 
 @dataclass
 class FunctionItemPayload:
-    """Subset of the server's FunctionItem pydantic model."""
+    """Subset of the server's request model.
+
+    Contains all 8 allowed fields per the OpenAPI spec.
+    """
 
     message: str
     ip: Optional[str] = None
@@ -187,6 +215,7 @@ class FunctionItemPayload:
     fill_priority: Optional[str] = None
     min_intent: Optional[str] = None
     skip_message_analysis: Optional[bool] = None
+    max_offers: Optional[int] = None
     extra_fields: Dict[str, Any] = field(default_factory=dict)
 
     def to_payload(self) -> Dict[str, Any]:
