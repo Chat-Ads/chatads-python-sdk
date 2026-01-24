@@ -8,19 +8,11 @@ from typing import Any, Dict, List, Optional
 FUNCTION_ITEM_OPTIONAL_FIELDS = (
     "ip",
     "country",
-    "message_analysis",
-    "fill_priority",
-    "min_intent",
-    "skip_message_analysis",
-    "max_offers",
+    "quality",
 )
 
 _CAMELCASE_ALIASES = {
-    "messageanalysis": "message_analysis",
-    "fillpriority": "fill_priority",
-    "minintent": "min_intent",
-    "skipmessageanalysis": "skip_message_analysis",
-    "maxoffers": "max_offers",
+    "fillpriority": "quality",
 }
 
 FUNCTION_ITEM_FIELD_ALIASES = {
@@ -31,11 +23,7 @@ FUNCTION_ITEM_FIELD_ALIASES = {
 _FIELD_TO_PAYLOAD_KEY = {
     "ip": "ip",
     "country": "country",
-    "message_analysis": "message_analysis",
-    "fill_priority": "fill_priority",
-    "min_intent": "min_intent",
-    "skip_message_analysis": "skip_message_analysis",
-    "max_offers": "max_offers",
+    "quality": "quality",
 }
 
 RESERVED_PAYLOAD_KEYS = frozenset({"message", *(_FIELD_TO_PAYLOAD_KEY.values())})
@@ -44,74 +32,84 @@ RESERVED_PAYLOAD_KEYS = frozenset({"message", *(_FIELD_TO_PAYLOAD_KEY.values())}
 @dataclass
 class Product:
     """Product metadata from resolution."""
-    Title: Optional[str] = None
-    Description: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    stars: Optional[float] = None
+    reviews: Optional[int] = None
 
     @classmethod
     def from_dict(cls, data: Optional[Dict[str, Any]]) -> Optional["Product"]:
         if not data:
             return None
         return cls(
-            Title=data.get("Title"),
-            Description=data.get("Description"),
+            title=data.get("title"),
+            description=data.get("description"),
+            stars=data.get("stars"),
+            reviews=data.get("reviews"),
         )
 
 
 @dataclass
 class Offer:
-    """Single affiliate offer returned by the API."""
-    LinkText: str
-    IntentLevel: str
-    URL: str
-    Status: str
-    SearchTerm: Optional[str] = None
-    IntentScore: Optional[float] = None
-    URLSource: Optional[str] = None
-    Reason: Optional[str] = None
-    Category: Optional[str] = None
-    Product: Optional[Product] = None
+    """Single affiliate offer returned by the API.
+
+    If an offer is in the array, it is guaranteed to have a URL.
+    """
+    link_text: str
+    confidence_level: str
+    url: str  # Always populated (if offer is in array, it has a URL)
+    search_term: Optional[str] = None  # Verbose mode only
+    confidence_score: Optional[float] = None  # Verbose mode only
+    resolution_source: Optional[str] = None  # Verbose mode only
+    category: Optional[str] = None
+    product: Optional[Product] = None
 
     @classmethod
     def from_dict(cls, data: Optional[Dict[str, Any]]) -> Optional["Offer"]:
         if not data:
             return None
         return cls(
-            LinkText=data.get("LinkText", ""),
-            IntentLevel=data.get("IntentLevel", ""),
-            URL=data.get("URL", ""),
-            Status=data.get("Status", ""),
-            SearchTerm=data.get("SearchTerm"),
-            IntentScore=data.get("IntentScore"),
-            URLSource=data.get("URLSource"),
-            Reason=data.get("Reason"),
-            Category=data.get("Category"),
-            Product=Product.from_dict(data.get("Product")),
+            link_text=data.get("link_text", ""),
+            confidence_level=data.get("confidence_level", ""),
+            url=data.get("url", ""),
+            search_term=data.get("search_term"),
+            confidence_score=data.get("confidence_score"),
+            resolution_source=data.get("resolution_source"),
+            category=data.get("category"),
+            product=Product.from_dict(data.get("product")),
         )
 
 
 @dataclass
 class AnalyzeData:
-    """Response data containing affiliate offers."""
-    Offers: List[Offer]
-    Requested: int
-    Returned: int
-    LatencyMs: Optional[float] = None
-    ExtractionMs: Optional[float] = None
-    LookupMs: Optional[float] = None
+    """Response data containing affiliate offers.
+
+    status is the single source of truth for the outcome:
+    - "filled": All requested offers filled (returned == requested)
+    - "partial_fill": Some offers filled (0 < returned < requested)
+    - "no_offers_found": No offers available (returned == 0)
+    - "internal_error": Service failure (timeout, unavailable)
+    """
+    status: str  # "filled" | "partial_fill" | "no_offers_found" | "internal_error"
+    offers: List[Offer]  # Only contains filled offers with URLs, never None
+    requested: int
+    returned: int  # Count of filled offers (len(offers))
+    extraction_source: Optional[str] = None  # Verbose mode only
+    extraction_debug: Optional[List[Any]] = None  # Verbose mode only
 
     @classmethod
-    def from_dict(cls, data: Optional[Dict[str, Any]]) -> Optional["AnalyzeData"]:
+    def from_dict(cls, data: Optional[Dict[str, Any]]) -> "AnalyzeData":
         if not data:
-            return None
-        offers_data = data.get("Offers", [])
+            return cls(status="no_offers_found", offers=[], requested=0, returned=0)
+        offers_data = data.get("offers") or []
         offers = [Offer.from_dict(o) for o in offers_data if o]
         return cls(
-            Offers=[o for o in offers if o is not None],
-            Requested=int(data.get("Requested", 0)),
-            Returned=int(data.get("Returned", 0)),
-            LatencyMs=data.get("LatencyMs"),
-            ExtractionMs=data.get("ExtractionMs"),
-            LookupMs=data.get("LookupMs"),
+            status=data.get("status", "no_offers_found"),
+            offers=[o for o in offers if o is not None],
+            requested=int(data.get("requested", 0)),
+            returned=int(data.get("returned", 0)),
+            extraction_source=data.get("extraction_source"),
+            extraction_debug=data.get("extraction_debug"),
         )
 
 
@@ -183,17 +181,20 @@ class ChatAdsMeta:
 
 @dataclass
 class ChatAdsResponse:
-    success: bool
     meta: ChatAdsMeta
-    data: Optional[AnalyzeData] = None
+    data: AnalyzeData = field(default_factory=lambda: AnalyzeData(status="no_offers_found", offers=[], requested=0, returned=0))
     error: Optional[ChatAdsError] = None
     raw: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def success(self) -> bool:
+        """Returns True if error is None (successful response)."""
+        return self.error is None
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "ChatAdsResponse":
         data = data or {}
         return cls(
-            success=bool(data.get("success", False)),
             data=AnalyzeData.from_dict(data.get("data")),
             error=ChatAdsError.from_dict(data.get("error")),
             meta=ChatAdsMeta.from_dict(data.get("meta")),
@@ -205,17 +206,13 @@ class ChatAdsResponse:
 class FunctionItemPayload:
     """Subset of the server's request model.
 
-    Contains all 8 allowed fields per the OpenAPI spec.
+    Contains all 4 allowed fields per the OpenAPI spec.
     """
 
     message: str
     ip: Optional[str] = None
     country: Optional[str] = None
-    message_analysis: Optional[str] = None
-    fill_priority: Optional[str] = None
-    min_intent: Optional[str] = None
-    skip_message_analysis: Optional[bool] = None
-    max_offers: Optional[int] = None
+    quality: Optional[str] = None
     extra_fields: Dict[str, Any] = field(default_factory=dict)
 
     def to_payload(self) -> Dict[str, Any]:

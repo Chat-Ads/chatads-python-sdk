@@ -45,7 +45,6 @@ async with AsyncChatAdsClient(
     result = await async_client.analyze_message(
         "Need data warehousing ideas",
         country="US",
-        message_analysis="fast",
     )
     print(result.raw)
 ```
@@ -59,10 +58,7 @@ The `FunctionItemPayload` supports these fields:
 | `message` | str (required) | Message to analyze (1-5000 chars) |
 | `ip` | str | IPv4/IPv6 address for country detection (max 45 characters) |
 | `country` | str | Country code (e.g., 'US'). If provided, skips IP-based country detection |
-| `message_analysis` | str | Controls keyword extraction method. Use 'fast' to optimize for speed, 'thorough' (default) to optimize for best keyword selection |
-| `fill_priority` | str | Controls affiliate link discovery. Use 'speed' to optimize for speed, 'coverage' (default) to ping multiple sources for the right affiliate link |
-| `min_intent` | str | Minimum purchase intent level required for affiliate resolution. 'any' = no filtering, 'low' (default) = filter garbage, 'medium' = balanced quality/fill, 'high' = high-intent keywords only |
-| `skip_message_analysis` | bool | Treat exact message as product keyword. When true, goes straight to affiliate link discovery without keyword extraction |
+| `quality` | str | Variable for playing around with keyword quality, link accuracy, and response times. 'fast' = quickest, but less likely to find a working affiliate link (~150ms), 'standard' = strong keyword quality and decent link matching (~1.4s), 'best' = strong keyword and strong matching (~2.5s). |
 
 ## Response Structure
 
@@ -76,10 +72,12 @@ result.meta.request_id      # Unique request identifier
 result.meta.usage           # UsageInfo with quota information
 result.raw                  # Full raw JSON response
 
+# Response data has:
+result.data.Status          # "filled", "partial_fill", "no_offers_found", or "internal_error"
+
 # Each Offer has:
 offer.LinkText              # Text to use for the affiliate link
-offer.URL                   # Affiliate URL
-offer.Status                # "filled", "scored", or "failed"
+offer.URL                   # Affiliate URL (always populated)
 offer.IntentLevel           # Intent level classification
 offer.Category              # Detected product category (optional)
 ```

@@ -34,31 +34,28 @@ def test_build_payload_from_kwargs_maps_aliases_and_extra_fields() -> None:
 
 def test_analyze_message_posts_payload_and_parses_response() -> None:
     response_json = {
-        "success": True,
         "data": {
-            "Offers": [
+            "status": "filled",
+            "offers": [
                 {
-                    "LinkText": "gym equipment",
-                    "SearchTerm": "home gym set",
-                    "IntentScore": 0.85,
-                    "IntentLevel": "high",
-                    "URL": "https://store.example.com/gym-set",
-                    "URLSource": "serper",
-                    "Status": "filled",
-                    "Reason": "",
-                    "Category": "fitness",
-                    "Product": {
-                        "Title": "Gym Set",
-                        "Description": "Best gym set ever",
+                    "link_text": "gym equipment",
+                    "search_term": "home gym set",
+                    "confidence_score": 0.85,
+                    "confidence_level": "high",
+                    "url": "https://store.example.com/gym-set",
+                    "resolution_source": "serper",
+                    "category": "fitness",
+                    "product": {
+                        "title": "Gym Set",
+                        "description": "Best gym set ever",
                     },
                 }
             ],
-            "Requested": 1,
-            "Returned": 1,
-            "LatencyMs": 150.5,
-            "ExtractionMs": 50.2,
-            "LookupMs": 100.3,
+            "requested": 1,
+            "returned": 1,
+            "extraction_source": "nlp",
         },
+        "error": None,
         "meta": {
             "request_id": "req_123",
             "timestamp": "2026-01-06T12:00:00Z",
@@ -103,19 +100,19 @@ def test_analyze_message_posts_payload_and_parses_response() -> None:
 
     assert response.success is True
     assert response.data is not None
-    assert response.data.Returned == 1
-    assert len(response.data.Offers) == 1
-    offer = response.data.Offers[0]
-    assert offer.IntentScore == 0.85
-    assert offer.IntentLevel == "high"
-    assert offer.Product is not None and offer.Product.Title == "Gym Set"
+    assert response.data.returned == 1
+    assert len(response.data.offers) == 1
+    offer = response.data.offers[0]
+    assert offer.confidence_score == 0.85
+    assert offer.confidence_level == "high"
+    assert offer.product is not None and offer.product.title == "Gym Set"
     assert response.meta.request_id == "req_123"
     assert response.meta.version == "1.0.0"
 
 
-def test_analyze_message_raises_api_error_when_success_false_and_raise_on_failure() -> None:
+def test_analyze_message_raises_api_error_when_error_present_and_raise_on_failure() -> None:
     response_json = {
-        "success": False,
+        "data": None,
         "error": {
             "code": "RATE_LIMIT",
             "message": "Too many requests",
@@ -166,7 +163,7 @@ def test_client_retries_on_retryable_status() -> None:
             return httpx.Response(
                 500,
                 json={
-                    "success": False,
+                    "data": None,
                     "error": {"code": "SERVER_ERROR", "message": "try later"},
                     "meta": {"request_id": "first"},
                 },
@@ -174,8 +171,8 @@ def test_client_retries_on_retryable_status() -> None:
         return httpx.Response(
             200,
             json={
-                "success": True,
-                "data": {"Offers": [], "Requested": 1, "Returned": 0},
+                "data": {"status": "no_offers_found", "offers": [], "requested": 1, "returned": 0},
+                "error": None,
                 "meta": {"request_id": "second"},
             },
         )
@@ -200,8 +197,8 @@ def test_client_retries_on_retryable_status() -> None:
 @pytest.mark.asyncio
 async def test_async_analyze_message_posts_payload() -> None:
     response_json = {
-        "success": True,
-        "data": {"Offers": [], "Requested": 1, "Returned": 0},
+        "data": {"status": "no_offers_found", "offers": [], "requested": 1, "returned": 0},
+        "error": None,
         "meta": {"request_id": "async_req"},
     }
     captured = {}
@@ -230,7 +227,7 @@ async def test_async_analyze_message_posts_payload() -> None:
 @pytest.mark.asyncio
 async def test_async_analyze_message_respects_raise_on_failure() -> None:
     response_json = {
-        "success": False,
+        "data": None,
         "error": {"code": "BAD_INPUT", "message": "nope"},
         "meta": {"request_id": "async_fail"},
     }
