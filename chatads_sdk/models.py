@@ -61,7 +61,6 @@ class Offer:
     search_term: Optional[str] = None  # Verbose mode only
     confidence_score: Optional[float] = None  # Verbose mode only
     resolution_source: Optional[str] = None  # Verbose mode only
-    category: Optional[str] = None
     product: Optional[Product] = None
 
     @classmethod
@@ -75,7 +74,6 @@ class Offer:
             search_term=data.get("search_term"),
             confidence_score=data.get("confidence_score"),
             resolution_source=data.get("resolution_source"),
-            category=data.get("category"),
             product=Product.from_dict(data.get("product")),
         )
 
@@ -96,6 +94,7 @@ class AnalyzeData:
     returned: int  # Count of filled offers (len(offers))
     extraction_source: Optional[str] = None  # Verbose mode only
     extraction_debug: Optional[List[Any]] = None  # Verbose mode only
+    resolution_debug: Optional[List[Any]] = None  # Verbose mode only
 
     @classmethod
     def from_dict(cls, data: Optional[Dict[str, Any]]) -> "AnalyzeData":
@@ -110,6 +109,7 @@ class AnalyzeData:
             returned=int(data.get("returned", 0)),
             extraction_source=data.get("extraction_source"),
             extraction_debug=data.get("extraction_debug"),
+            resolution_debug=data.get("resolution_debug"),
         )
 
 

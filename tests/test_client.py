@@ -10,7 +10,7 @@ from chatads_sdk.client import (
     _build_payload_from_kwargs,
     _compute_retry_delay,
 )
-from chatads_sdk.exceptions import ChatAdsAPIError
+from chatads_sdk.exceptions import ChatAdsAPIError, ChatAdsSDKError
 from chatads_sdk.models import FunctionItemPayload
 
 
@@ -44,7 +44,6 @@ def test_analyze_message_posts_payload_and_parses_response() -> None:
                     "confidence_level": "high",
                     "url": "https://store.example.com/gym-set",
                     "resolution_source": "serper",
-                    "category": "fitness",
                     "product": {
                         "title": "Gym Set",
                         "description": "Best gym set ever",
@@ -252,3 +251,93 @@ async def test_async_analyze_message_respects_raise_on_failure() -> None:
     assert excinfo.value.response is not None
     assert excinfo.value.response.error is not None
     assert excinfo.value.response.error.code == "BAD_INPUT"
+
+
+def test_client_retries_on_non_json_retryable_response() -> None:
+    """Non-JSON 502 response should trigger retry, not immediate failure."""
+    calls = {"count": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["count"] += 1
+        if calls["count"] == 1:
+            return httpx.Response(502, text="<html>Bad Gateway</html>")
+        return httpx.Response(
+            200,
+            json={
+                "data": {"status": "no_offers_found", "offers": [], "requested": 1, "returned": 0},
+                "error": None,
+                "meta": {"request_id": "retry_ok"},
+            },
+        )
+
+    http_client = httpx.Client(transport=httpx.MockTransport(handler))
+    client = ChatAdsClient(
+        api_key="test-key",
+        base_url="https://chatads.example.com",
+        http_client=http_client,
+        max_retries=1,
+        retry_backoff_factor=0.0,
+    )
+    try:
+        response = client.analyze_message("retry non-json")
+    finally:
+        http_client.close()
+
+    assert calls["count"] == 2
+    assert response.meta.request_id == "retry_ok"
+
+
+def test_client_raises_on_non_json_non_retryable_response() -> None:
+    """Non-JSON response on a non-retryable status should raise immediately."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(400, text="Bad Request")
+
+    http_client = httpx.Client(transport=httpx.MockTransport(handler))
+    client = ChatAdsClient(
+        api_key="test-key",
+        base_url="https://chatads.example.com",
+        http_client=http_client,
+        max_retries=2,
+        retry_backoff_factor=0.0,
+    )
+    try:
+        with pytest.raises(ChatAdsSDKError, match="non-JSON"):
+            client.analyze_message("no retry")
+    finally:
+        http_client.close()
+
+
+@pytest.mark.asyncio
+async def test_async_client_retries_on_non_json_retryable_response() -> None:
+    """Async: Non-JSON 503 response should trigger retry."""
+    calls = {"count": 0}
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        calls["count"] += 1
+        if calls["count"] == 1:
+            return httpx.Response(503, text="Service Unavailable")
+        return httpx.Response(
+            200,
+            json={
+                "data": {"status": "no_offers_found", "offers": [], "requested": 1, "returned": 0},
+                "error": None,
+                "meta": {"request_id": "async_retry_ok"},
+            },
+        )
+
+    http_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    client = AsyncChatAdsClient(
+        api_key="test-key",
+        base_url="https://chatads.example.com",
+        http_client=http_client,
+        max_retries=1,
+        retry_backoff_factor=0.0,
+    )
+    try:
+        response = await client.analyze_message("async retry non-json")
+    finally:
+        await http_client.aclose()
+
+    assert calls["count"] == 2
+    assert response.meta.request_id == "async_retry_ok"

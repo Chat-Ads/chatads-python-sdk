@@ -30,9 +30,9 @@ with ChatAdsClient(
         country="US",
     )
     result = client.analyze(payload)
-    if result.success and result.data and result.data.Returned > 0:
-        offer = result.data.Offers[0]
-        print(offer.LinkText, offer.URL)
+    if result.data and result.data.returned > 0:
+        offer = result.data.offers[0]
+        print(offer.link_text, offer.url)
     else:
         print("No match")
 
@@ -63,34 +63,32 @@ The `FunctionItemPayload` supports these fields:
 ## Response Structure
 
 ```python
-result.success              # bool - True if request succeeded
-result.data.Offers          # List[Offer] - Array of affiliate offers
-result.data.Requested       # int - Number of offers requested
-result.data.Returned        # int - Number of offers returned
-result.error                # ChatAdsError or None (code, message, details)
+result.data.offers          # List[Offer] - Array of affiliate offers
+result.data.requested       # int - Number of offers requested
+result.data.returned        # int - Number of offers returned
+result.error                # ChatAdsError or None (code, message)
 result.meta.request_id      # Unique request identifier
 result.meta.usage           # UsageInfo with quota information
 result.raw                  # Full raw JSON response
 
 # Response data has:
-result.data.Status          # "filled", "partial_fill", "no_offers_found", or "internal_error"
+result.data.status          # "filled", "partial_fill", "no_offers_found", or "internal_error"
 
 # Each Offer has:
-offer.LinkText              # Text to use for the affiliate link
-offer.URL                   # Affiliate URL (always populated)
-offer.IntentLevel           # Intent level classification
-offer.Category              # Detected product category (optional)
+offer.link_text             # Text to use for the affiliate link
+offer.url                   # Affiliate URL (always populated)
+offer.confidence_level      # Confidence level classification
 ```
 
 ## Error Handling
 
 Non-2xx responses raise `ChatAdsAPIError` with:
 - `status_code` - HTTP status code
-- `response.error.code` - Error code (e.g., `DAILY_QUOTA_EXCEEDED`, `RATE_LIMITED`)
+- `response.error.code` - Error code (e.g., `DAILY_LIMIT_EXCEEDED`, `MONTHLY_LIMIT_EXCEEDED`)
 - `response.error.message` - Human-readable message
 - `retry_after` - Seconds to wait (for 429 responses)
 
-Set `raise_on_failure=True` to also raise on 200 responses with `success=false`.
+Set `raise_on_failure=True` to also raise on 200 responses with error responses.
 
 **Retryable status codes** (automatic with `max_retries>0`):
 - `408` Request Timeout
@@ -102,8 +100,8 @@ Set `raise_on_failure=True` to also raise on 200 responses with `success=false`.
 - Retries are opt-in. Provide `max_retries>0` to automatically retry transport errors and retryable status codes. The client honors `Retry-After` headers and falls back to exponential backoff.
 - `base_url` must point to your HTTPS deployment (the client rejects plaintext URLs so API keys are never transmitted insecurely).
 - The default hosted environment lives at `https://api.getchatads.com`; use your own domain if you're proxying ChatAds behind something else.
-- `FunctionItemPayload` matches the server-side `FunctionItem` pydantic model. Keyword arguments passed to `ChatAdsClient.analyze_message()` accept either snake_case or camelCase keys.
-- Reserved payload keys (e.g., `message`, `pageUrl`) cannot be overridden through `extra_fields`; doing so raises `ValueError` to prevent silent mutations.
+- `FunctionItemPayload` matches the server-side Go request struct. Keyword arguments passed to `ChatAdsClient.analyze_message()` accept either snake_case or camelCase keys.
+- Reserved payload keys (e.g., `message`, `country`) cannot be overridden through `extra_fields`; doing so raises `ValueError` to prevent silent mutations.
 - `debug=True` enables structured request/response logging, but payload contents are redacted automatically so you don't leak PII into logs.
 
 ## CLI Smoke Test

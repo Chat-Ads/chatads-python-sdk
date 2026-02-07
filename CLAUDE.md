@@ -5,7 +5,7 @@ Python client for the ChatAds API.
 ## Package Info
 
 - **Package name**: `chatads-sdk` (on PyPI)
-- **Language**: Python 3.8+
+- **Language**: Python 3.9+
 - **Type hints**: Yes
 
 ## Installation

@@ -126,7 +126,16 @@ class ChatAdsClient:
                 attempt += 1
                 continue
 
-            parsed = _parse_response(response)
+            try:
+                parsed = _parse_response(response)
+            except ChatAdsSDKError:
+                if attempt < self._max_retries and self._should_retry_status(response.status_code):
+                    _sleep_sync(
+                        _compute_retry_delay(attempt, self._retry_backoff_factor, None)
+                    )
+                    attempt += 1
+                    continue
+                raise
             self._log_response(response, parsed)
             is_error = response.is_error or (self._raise_on_failure and not parsed.success)
             if not is_error:
@@ -266,7 +275,16 @@ class AsyncChatAdsClient:
                 attempt += 1
                 continue
 
-            parsed = _parse_response(response)
+            try:
+                parsed = _parse_response(response)
+            except ChatAdsSDKError:
+                if attempt < self._max_retries and self._should_retry_status(response.status_code):
+                    await _sleep_async(
+                        _compute_retry_delay(attempt, self._retry_backoff_factor, None)
+                    )
+                    attempt += 1
+                    continue
+                raise
             self._log_response(response, parsed)
             is_error = response.is_error or (self._raise_on_failure and not parsed.success)
             if not is_error:
