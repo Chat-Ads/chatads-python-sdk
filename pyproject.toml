@@ -1,6 +1,6 @@
 [project]
 name = "chatads-sdk"
-version = "0.1.14"
+version = "0.1.15"
 description = "Lightweight Python client for the ChatAds affiliate scoring API"
 authors = [{name = "ChatAds", email = "chris@getchatads.com"}]
 readme = "README.md"

@@ -9,6 +9,7 @@ FUNCTION_ITEM_OPTIONAL_FIELDS = (
     "ip",
     "country",
     "quality",
+    "input_type",
 )
 
 _CAMELCASE_ALIASES = {
@@ -24,6 +25,7 @@ _FIELD_TO_PAYLOAD_KEY = {
     "ip": "ip",
     "country": "country",
     "quality": "quality",
+    "input_type": "input_type",
 }
 
 RESERVED_PAYLOAD_KEYS = frozenset({"message", *(_FIELD_TO_PAYLOAD_KEY.values())})
@@ -56,9 +58,9 @@ class Offer:
     If an offer is in the array, it is guaranteed to have a URL.
     """
     link_text: str
-    confidence_level: str
     url: str  # Always populated (if offer is in array, it has a URL)
     search_term: Optional[str] = None  # Verbose mode only
+    confidence_level: Optional[str] = None  # Verbose mode only
     confidence_score: Optional[float] = None  # Verbose mode only
     resolution_source: Optional[str] = None  # Verbose mode only
     product: Optional[Product] = None
@@ -69,9 +71,9 @@ class Offer:
             return None
         return cls(
             link_text=data.get("link_text", ""),
-            confidence_level=data.get("confidence_level", ""),
             url=data.get("url", ""),
             search_term=data.get("search_term"),
+            confidence_level=data.get("confidence_level"),
             confidence_score=data.get("confidence_score"),
             resolution_source=data.get("resolution_source"),
             product=Product.from_dict(data.get("product")),
@@ -95,6 +97,7 @@ class AnalyzeData:
     extraction_source: Optional[str] = None  # Verbose mode only
     extraction_debug: Optional[List[Any]] = None  # Verbose mode only
     resolution_debug: Optional[List[Any]] = None  # Verbose mode only
+    input_type: Optional[str] = None  # Verbose mode only
 
     @classmethod
     def from_dict(cls, data: Optional[Dict[str, Any]]) -> "AnalyzeData":
@@ -110,6 +113,7 @@ class AnalyzeData:
             extraction_source=data.get("extraction_source"),
             extraction_debug=data.get("extraction_debug"),
             resolution_debug=data.get("resolution_debug"),
+            input_type=data.get("input_type"),
         )
 
 
@@ -206,13 +210,14 @@ class ChatAdsResponse:
 class FunctionItemPayload:
     """Subset of the server's request model.
 
-    Contains all 4 allowed fields per the OpenAPI spec.
+    Contains the allowed fields per the OpenAPI spec.
     """
 
     message: str
     ip: Optional[str] = None
     country: Optional[str] = None
     quality: Optional[str] = None
+    input_type: Optional[str] = None
     extra_fields: Dict[str, Any] = field(default_factory=dict)
 
     def to_payload(self) -> Dict[str, Any]:
