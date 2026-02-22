@@ -38,6 +38,7 @@ class Product:
     description: Optional[str] = None
     stars: Optional[float] = None
     reviews: Optional[int] = None
+    image: Optional[str] = None
 
     @classmethod
     def from_dict(cls, data: Optional[Dict[str, Any]]) -> Optional["Product"]:
@@ -48,6 +49,7 @@ class Product:
             description=data.get("description"),
             stars=data.get("stars"),
             reviews=data.get("reviews"),
+            image=data.get("image"),
         )
 
 
@@ -64,6 +66,7 @@ class Offer:
     confidence_score: Optional[float] = None  # Verbose mode only
     resolution_source: Optional[str] = None  # Verbose mode only
     product: Optional[Product] = None
+    offer_source: Optional[str] = None
 
     @classmethod
     def from_dict(cls, data: Optional[Dict[str, Any]]) -> Optional["Offer"]:
@@ -77,6 +80,7 @@ class Offer:
             confidence_score=data.get("confidence_score"),
             resolution_source=data.get("resolution_source"),
             product=Product.from_dict(data.get("product")),
+            offer_source=data.get("offer_source"),
         )
 
 
